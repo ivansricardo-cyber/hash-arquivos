@@ -1,0 +1,2 @@
+# hash-arquivos
+hash-arquivos
