@@ -83,3 +83,20 @@ def test_scan(tmp_path):
     assert len(scan(tmp_path)[0]) == 1
     assert len(scan(tmp_path, True)[0]) == 2
     assert scan(tmp_path / 'missing')[1]
+
+
+def test_stat_precision_differs_between_apis(tmp_path, monkeypatch):
+    # No Windows fstat pode ter timestamps com precisão diferente de stat(path).
+    # Compare cada API com ela mesma, preservando a verificação de identidade.
+    from types import SimpleNamespace
+    from hash_arquivos import core
+    p = tmp_path / 'stable'
+    p.write_bytes(b'abc')
+    original = core.os.fstat
+    def rounded(fd):
+        st = original(fd)
+        return SimpleNamespace(st_size=st.st_size, st_mtime_ns=st.st_mtime_ns // 1000 * 1000,
+                               st_ctime_ns=st.st_ctime_ns // 1000 * 1000,
+                               st_dev=st.st_dev, st_ino=st.st_ino)
+    monkeypatch.setattr(core.os, 'fstat', rounded)
+    assert process([p])[0].status == 'Concluído'

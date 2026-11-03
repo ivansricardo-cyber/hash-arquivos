@@ -11,7 +11,9 @@ from hash_arquivos.exporters import export, converter
 def results(tmp_path):
     p = tmp_path / 'ação & arquivo.bin'
     p.write_bytes(b'abcdefghijk')
-    return process([p], block_size=4)
+    results = process([p], block_size=4)
+    assert results[0].status == 'Concluído'
+    return results
 
 @pytest.mark.parametrize('details', [False, True])
 def test_pdf(tmp_path, results, details):
@@ -54,7 +56,7 @@ def test_doc(tmp_path, results, details):
     assert p.read_bytes()[:8] == bytes.fromhex('D0CF11E0A1B11AE1')
     out = tmp_path / 'roundtrip'
     out.mkdir()
-    subprocess.run([converter(), '-env:UserInstallation=' + (tmp_path / 'profile').as_uri(), '--headless', '--convert-to', 'txt:Text', '--outdir', str(out), str(p)], check=True, timeout=120)
+    subprocess.run([converter(), '-env:UserInstallation=' + (tmp_path / 'profile').as_uri(), '--headless', '--convert-to', 'txt:Text (encoded):UTF8', '--outdir', str(out), str(p)], check=True, timeout=120)
     text = (out / 'result.txt').read_text(encoding='utf-8-sig')
     assert results[0].digest in text
     assert ('Detalhes dos blocos' in text) == details

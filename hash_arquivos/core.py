@@ -79,6 +79,9 @@ def process(paths, algorithm='SHA-256', block_size=DEFAULT_BLOCK, cancel=None, p
         try:
             with open(path, 'rb') as stream:
                 before = os.fstat(stream.fileno())
+                path_before = os.stat(path)
+                if not os.path.samestat(before, path_before):
+                    raise OSError('Arquivo substituído ao iniciar a leitura.')
                 result.size = before.st_size
                 whole = hashlib.new(ALGORITHMS[algorithm])
                 offset = 0
@@ -91,7 +94,7 @@ def process(paths, algorithm='SHA-256', block_size=DEFAULT_BLOCK, cancel=None, p
                     if not data:
                         after = os.fstat(stream.fileno())
                         current = os.stat(path)
-                        if signature(before) != signature(after) or signature(before) != signature(current) or offset != before.st_size:
+                        if signature(before) != signature(after) or signature(path_before) != signature(current) or offset != before.st_size:
                             result.status = 'Alterado'
                             result.error = 'Arquivo alterado ou substituído durante a leitura; hashes descartados.'
                         else:
